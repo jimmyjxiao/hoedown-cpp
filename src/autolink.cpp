@@ -1,3 +1,4 @@
+
 #include "autolink.h"
 
 #include <string.h>
@@ -142,19 +143,20 @@ check_domain(uint8_t *data, size_t size, int allow_short)
 		return np ? i : 0;
 	}
 }
-
-size_t
-hoedown_autolink__www(
-	size_t *rewind_p,
-	hoedown_buffer *link,
-	uint8_t *data,
-	size_t max_rewind,
-	size_t size,
-	unsigned int flags)
+//size_t
+//hoedown_autolink__www(
+//	size_t *rewind_p,
+//	hoedown_buffer *link,
+//	uint8_t *data,
+//	size_t max_rewind,
+//	size_t size,
+//	unsigned int flags)
+ size_t hoedown_autolink__www(size_t *rewind_p, hoedown_buffer *link,
+uint8_t *data, size_t offset, size_t size, hoedown_autolink_flags flags)
 {
 	size_t link_end;
 
-	if (max_rewind > 0 && !ispunct(data[-1]) && !isspace(data[-1]))
+	if (offset > 0 && !ispunct(data[-1]) && !isspace(data[-1]))
 		return 0;
 
 	if (size < 4 || memcmp(data, "www.", strlen("www.")) != 0)
@@ -168,7 +170,7 @@ hoedown_autolink__www(
 	while (link_end < size && !isspace(data[link_end]))
 		link_end++;
 
-	link_end = autolink_delim(data, link_end, max_rewind, size);
+	link_end = autolink_delim(data, link_end, offset, size);
 
 	if (link_end == 0)
 		return 0;
@@ -179,19 +181,21 @@ hoedown_autolink__www(
 	return (int)link_end;
 }
 
-size_t
-hoedown_autolink__email(
-	size_t *rewind_p,
-	hoedown_buffer *link,
-	uint8_t *data,
-	size_t max_rewind,
-	size_t size,
-	unsigned int flags)
+//size_t
+//hoedown_autolink__email(
+//	size_t *rewind_p,
+//	hoedown_buffer *link,
+//	uint8_t *data,
+//	size_t max_rewind,
+//	size_t size,
+//	unsigned int flags)
+size_t hoedown_autolink__email(size_t *rewind_p, hoedown_buffer *link,
+	uint8_t *data, size_t offset, size_t size, hoedown_autolink_flags flags)
 {
 	size_t link_end, rewind;
 	int nb = 0, np = 0;
 
-	for (rewind = 0; rewind < max_rewind; ++rewind) {
+	for (rewind = 0; rewind < offset; ++rewind) {
 		uint8_t c = data[-1 - rewind];
 
 		if (isalnum(c))
@@ -224,7 +228,7 @@ hoedown_autolink__email(
 		!isalpha(data[link_end - 1]))
 		return 0;
 
-	link_end = autolink_delim(data, link_end, max_rewind, size);
+	link_end = autolink_delim(data, link_end, offset, size);
 
 	if (link_end == 0)
 		return 0;
@@ -235,21 +239,15 @@ hoedown_autolink__email(
 	return link_end;
 }
 
-size_t
-hoedown_autolink__url(
-	size_t *rewind_p,
-	hoedown_buffer *link,
-	uint8_t *data,
-	size_t max_rewind,
-	size_t size,
-	unsigned int flags)
+size_t hoedown_autolink__url(size_t *rewind_p, hoedown_buffer *link,
+	uint8_t *data, size_t offset, size_t size, hoedown_autolink_flags flags)
 {
 	size_t link_end, rewind = 0, domain_len;
 
 	if (size < 4 || data[1] != '/' || data[2] != '/')
 		return 0;
 
-	while (rewind < max_rewind && isalpha(data[-1 - rewind]))
+	while (rewind < offset && isalpha(data[-1 - rewind]))
 		rewind++;
 
 	if (!hoedown_autolink_is_safe(data - rewind, size + rewind))
@@ -269,7 +267,7 @@ hoedown_autolink__url(
 	while (link_end < size && !isspace(data[link_end]))
 		link_end++;
 
-	link_end = autolink_delim(data, link_end, max_rewind, size);
+	link_end = autolink_delim(data, link_end, offset, size);
 
 	if (link_end == 0)
 		return 0;

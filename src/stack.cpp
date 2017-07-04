@@ -1,3 +1,4 @@
+
 #include "stack.h"
 
 #include "buffer.h"
@@ -36,7 +37,7 @@ hoedown_stack_grow(hoedown_stack *st, size_t neosz)
 	if (st->asize >= neosz)
 		return;
 
-	st->item = hoedown_realloc(st->item, neosz * sizeof(void *));
+	st->item = (void**)hoedown_realloc(st->item, neosz * sizeof(void *));
 	memset(st->item + st->asize, 0x0, (neosz - st->asize) * sizeof(void *));
 
 	st->asize = neosz;

@@ -1,3 +1,4 @@
+
 #include "html.h"
 
 #include <string.h>
@@ -58,7 +59,7 @@ static void escape_href(hoedown_buffer *ob, const uint8_t *source, size_t length
 static int
 rndr_autolink(hoedown_buffer *ob, const hoedown_buffer *link, hoedown_autolink_type type, const hoedown_renderer_data *data)
 {
-	hoedown_html_renderer_state *state = data->opaque;
+	hoedown_html_renderer_state *state = (hoedown_html_renderer_state *)data->opaque;
 
 	if (!link || !link->size)
 		return 0;
@@ -206,7 +207,7 @@ rndr_quote(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_rend
 static int
 rndr_linebreak(hoedown_buffer *ob, const hoedown_renderer_data *data)
 {
-	hoedown_html_renderer_state *state = data->opaque;
+	hoedown_html_renderer_state *state = (hoedown_html_renderer_state *)data->opaque;
 	hoedown_buffer_puts(ob, USE_XHTML(state) ? "<br/>\n" : "<br>\n");
 	return 1;
 }
@@ -214,7 +215,7 @@ rndr_linebreak(hoedown_buffer *ob, const hoedown_renderer_data *data)
 static void
 rndr_header(hoedown_buffer *ob, const hoedown_buffer *content, int level, const hoedown_renderer_data *data)
 {
-	hoedown_html_renderer_state *state = data->opaque;
+	hoedown_html_renderer_state *state = (hoedown_html_renderer_state *)data->opaque;
 
 	if (ob->size)
 		hoedown_buffer_putc(ob, '\n');
@@ -231,7 +232,7 @@ rndr_header(hoedown_buffer *ob, const hoedown_buffer *content, int level, const 
 static int
 rndr_link(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_buffer *link, const hoedown_buffer *title, const hoedown_renderer_data *data)
 {
-	hoedown_html_renderer_state *state = data->opaque;
+	hoedown_html_renderer_state *state = (hoedown_html_renderer_state *)data->opaque;
 
 	HOEDOWN_BUFPUTSL(ob, "<a href=\"");
 
@@ -282,7 +283,7 @@ rndr_listitem(hoedown_buffer *ob, const hoedown_buffer *content, hoedown_list_fl
 static void
 rndr_paragraph(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data)
 {
-	hoedown_html_renderer_state *state = data->opaque;
+	hoedown_html_renderer_state *state = (hoedown_html_renderer_state *)data->opaque;
 	size_t i = 0;
 
 	if (ob->size) hoedown_buffer_putc(ob, '\n');
@@ -362,7 +363,7 @@ rndr_triple_emphasis(hoedown_buffer *ob, const hoedown_buffer *content, const ho
 static void
 rndr_hrule(hoedown_buffer *ob, const hoedown_renderer_data *data)
 {
-	hoedown_html_renderer_state *state = data->opaque;
+	hoedown_html_renderer_state *state = (hoedown_html_renderer_state *)data->opaque;
 	if (ob->size) hoedown_buffer_putc(ob, '\n');
 	hoedown_buffer_puts(ob, USE_XHTML(state) ? "<hr/>\n" : "<hr>\n");
 }
@@ -370,7 +371,7 @@ rndr_hrule(hoedown_buffer *ob, const hoedown_renderer_data *data)
 static int
 rndr_image(hoedown_buffer *ob, const hoedown_buffer *link, const hoedown_buffer *title, const hoedown_buffer *alt, const hoedown_renderer_data *data)
 {
-	hoedown_html_renderer_state *state = data->opaque;
+	hoedown_html_renderer_state *state = (hoedown_html_renderer_state *)data->opaque;
 	if (!link || !link->size) return 0;
 
 	HOEDOWN_BUFPUTSL(ob, "<img src=\"");
@@ -391,7 +392,7 @@ rndr_image(hoedown_buffer *ob, const hoedown_buffer *link, const hoedown_buffer 
 static int
 rndr_raw_html(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_renderer_data *data)
 {
-	hoedown_html_renderer_state *state = data->opaque;
+	hoedown_html_renderer_state *state = (hoedown_html_renderer_state *)data->opaque;
 
 	/* ESCAPE overrides SKIP_HTML. It doesn't look to see if
 	 * there are any valid tags, just escapes all of them. */
@@ -498,7 +499,7 @@ rndr_normal_text(hoedown_buffer *ob, const hoedown_buffer *content, const hoedow
 static void
 rndr_footnotes(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data)
 {
-	hoedown_html_renderer_state *state = data->opaque;
+	hoedown_html_renderer_state *state = (hoedown_html_renderer_state *)data->opaque;
 
 	if (ob->size) hoedown_buffer_putc(ob, '\n');
 	HOEDOWN_BUFPUTSL(ob, "<div class=\"footnotes\">\n");
@@ -559,7 +560,7 @@ rndr_math(hoedown_buffer *ob, const hoedown_buffer *text, int displaymode, const
 static void
 toc_header(hoedown_buffer *ob, const hoedown_buffer *content, int level, const hoedown_renderer_data *data)
 {
-	hoedown_html_renderer_state *state = data->opaque;
+	hoedown_html_renderer_state *state = (hoedown_html_renderer_state *)data->opaque;
 
 	if (level <= state->toc_data.nesting_level) {
 		/* set the level offset if this is the first header
@@ -606,7 +607,7 @@ toc_finalize(hoedown_buffer *ob, int inline_render, const hoedown_renderer_data 
 	if (inline_render)
 		return;
 
-	state = data->opaque;
+	state = (hoedown_html_renderer_state *)data->opaque;
 
 	while (state->toc_data.current_level > 0) {
 		HOEDOWN_BUFPUTSL(ob, "</li>\n</ul>\n");
@@ -666,13 +667,13 @@ hoedown_html_toc_renderer_new(int nesting_level)
 	hoedown_renderer *renderer;
 
 	/* Prepare the state pointer */
-	state = hoedown_malloc(sizeof(hoedown_html_renderer_state));
+	state = (hoedown_html_renderer_state *)hoedown_malloc(sizeof(hoedown_html_renderer_state));
 	memset(state, 0x0, sizeof(hoedown_html_renderer_state));
 
 	state->toc_data.nesting_level = nesting_level;
 
 	/* Prepare the renderer */
-	renderer = hoedown_malloc(sizeof(hoedown_renderer));
+	renderer = (hoedown_renderer*)hoedown_malloc(sizeof(hoedown_renderer));
 	memcpy(renderer, &cb_default, sizeof(hoedown_renderer));
 
 	renderer->opaque = state;
@@ -729,14 +730,14 @@ hoedown_html_renderer_new(hoedown_html_flags render_flags, int nesting_level)
 	hoedown_renderer *renderer;
 
 	/* Prepare the state pointer */
-	state = hoedown_malloc(sizeof(hoedown_html_renderer_state));
+	state = (hoedown_html_renderer_state *)hoedown_malloc(sizeof(hoedown_html_renderer_state));
 	memset(state, 0x0, sizeof(hoedown_html_renderer_state));
 
 	state->flags = render_flags;
 	state->toc_data.nesting_level = nesting_level;
 
 	/* Prepare the renderer */
-	renderer = hoedown_malloc(sizeof(hoedown_renderer));
+	renderer = (hoedown_renderer *)hoedown_malloc(sizeof(hoedown_renderer));
 	memcpy(renderer, &cb_default, sizeof(hoedown_renderer));
 
 	if (render_flags & HOEDOWN_HTML_SKIP_HTML || render_flags & HOEDOWN_HTML_ESCAPE)

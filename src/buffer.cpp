@@ -1,3 +1,4 @@
+
 #include "buffer.h"
 
 #include <stdio.h>
@@ -72,7 +73,7 @@ hoedown_buffer_uninit(hoedown_buffer *buf)
 hoedown_buffer *
 hoedown_buffer_new(size_t unit)
 {
-	hoedown_buffer *ret = hoedown_malloc(sizeof (hoedown_buffer));
+	hoedown_buffer *ret = (hoedown_buffer*)hoedown_malloc(sizeof (hoedown_buffer));
 	hoedown_buffer_init(ret, unit, hoedown_realloc, free, free);
 	return ret;
 }
@@ -112,7 +113,7 @@ hoedown_buffer_grow(hoedown_buffer *buf, size_t neosz)
 	while (neoasz < neosz)
 		neoasz += buf->unit;
 
-	buf->data = buf->data_realloc(buf->data, neoasz);
+	buf->data = (uint8_t*)buf->data_realloc(buf->data, neoasz);
 	buf->asize = neoasz;
 }
 

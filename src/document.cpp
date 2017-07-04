@@ -1,3 +1,4 @@
+
 #include "document.h"
 
 #include <assert.h>
@@ -144,7 +145,7 @@ newbuf(hoedown_document *doc, int type)
 
 	if (pool->size < pool->asize &&
 		pool->item[pool->size] != NULL) {
-		work = pool->item[pool->size++];
+		work = (hoedown_buffer*)pool->item[pool->size++];
 		work->size = 0;
 	} else {
 		work = hoedown_buffer_new(buf_size[type]);
@@ -197,7 +198,7 @@ add_link_ref(
 	struct link_ref **references,
 	const uint8_t *name, size_t name_size)
 {
-	struct link_ref *ref = hoedown_calloc(1, sizeof(struct link_ref));
+	struct link_ref *ref = (link_ref*)hoedown_calloc(1, sizeof(struct link_ref));
 
 	ref->id = hash_link_ref(name, name_size);
 	ref->next = references[ref->id % REF_TABLE_SIZE];
@@ -246,7 +247,7 @@ free_link_refs(struct link_ref **references)
 static struct footnote_ref *
 create_footnote_ref(struct footnote_list *list, const uint8_t *name, size_t name_size)
 {
-	struct footnote_ref *ref = hoedown_calloc(1, sizeof(struct footnote_ref));
+	struct footnote_ref *ref = (footnote_ref *)hoedown_calloc(1, sizeof(struct footnote_ref));
 
 	ref->id = hash_link_ref(name, name_size);
 
@@ -256,7 +257,7 @@ create_footnote_ref(struct footnote_list *list, const uint8_t *name, size_t name
 static int
 add_footnote_ref(struct footnote_list *list, struct footnote_ref *ref)
 {
-	struct footnote_item *item = hoedown_calloc(1, sizeof(struct footnote_item));
+	struct footnote_item *item = (footnote_item *)hoedown_calloc(1, sizeof(struct footnote_item));
 	if (!item)
 		return 0;
 	item->ref = ref;
@@ -1061,7 +1062,7 @@ char_autolink_email(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, si
 
 	link = newbuf(doc, BUFFER_SPAN);
 
-	if ((link_len = hoedown_autolink__email(&rewind, link, data, offset, size, 0)) > 0) {
+	if ((link_len = hoedown_autolink__email(&rewind, link, data, offset, size, (hoedown_autolink_flags)0)) > 0) {
 		if (ob->size > rewind)
 			ob->size -= rewind;
 		else
@@ -1085,7 +1086,7 @@ char_autolink_url(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size
 
 	link = newbuf(doc, BUFFER_SPAN);
 
-	if ((link_len = hoedown_autolink__url(&rewind, link, data, offset, size, 0)) > 0) {
+	if ((link_len = hoedown_autolink__url(&rewind, link, data, offset, size, (hoedown_autolink_flags)0)) > 0) {
 		if (ob->size > rewind)
 			ob->size -= rewind;
 		else
@@ -1917,7 +1918,7 @@ parse_listitem(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t 
 				if (in_empty && (
 					((*flags & HOEDOWN_LIST_ORDERED) && has_next_uli) ||
 					(!(*flags & HOEDOWN_LIST_ORDERED) && has_next_oli)))
-					*flags |= HOEDOWN_LI_END;
+					 *(int*)flags |= HOEDOWN_LI_END;
 
 				break;
 			}
@@ -1929,7 +1930,7 @@ parse_listitem(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t 
 		 * note that now we only require 1 space of indentation
 		 * to continue a list */
 		else if (in_empty && pre == 0) {
-			*flags |= HOEDOWN_LI_END;
+			*(int*)*flags |= HOEDOWN_LI_END;
 			break;
 		}
 
@@ -1946,7 +1947,7 @@ parse_listitem(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t 
 
 	/* render of li contents */
 	if (has_inside_empty)
-		*flags |= HOEDOWN_LI_BLOCK;
+		*(int*)*flags |= HOEDOWN_LI_BLOCK;
 
 	if (*flags & HOEDOWN_LI_BLOCK) {
 		/* intermediate render of block li */
@@ -2285,7 +2286,7 @@ parse_table_row(
 			cell_end--;
 
 		parse_inline(cell_work, doc, data + cell_start, 1 + cell_end - cell_start);
-		doc->md.table_cell(row_work, cell_work, col_data[col] | header_flag, &doc->data);
+		doc->md.table_cell(row_work, cell_work, (hoedown_table_flags)(col_data[col] | header_flag), &doc->data);
 
 		popbuf(doc, BUFFER_SPAN);
 		i++;
@@ -2293,7 +2294,7 @@ parse_table_row(
 
 	for (; col < columns; ++col) {
 		hoedown_buffer empty_cell = { 0, 0, 0, 0, NULL, NULL, NULL };
-		doc->md.table_cell(row_work, &empty_cell, col_data[col] | header_flag, &doc->data);
+		doc->md.table_cell(row_work, &empty_cell, (hoedown_table_flags)(col_data[col] | header_flag), &doc->data);
 	}
 
 	doc->md.table_row(ob, row_work, &doc->data);
@@ -2336,7 +2337,7 @@ parse_table_header(
 		return 0;
 
 	*columns = pipes + 1;
-	*column_data = hoedown_calloc(*columns, sizeof(hoedown_table_flags));
+	*column_data = (hoedown_table_flags*)hoedown_calloc(*columns, sizeof(hoedown_table_flags));
 
 	/* Parse the header underline */
 	i++;
@@ -2354,7 +2355,7 @@ parse_table_header(
 			i++;
 
 		if (data[i] == ':') {
-			i++; (*column_data)[col] |= HOEDOWN_TABLE_ALIGN_LEFT;
+			i++; *(int*)(*column_data)[col] |= HOEDOWN_TABLE_ALIGN_LEFT;
 			dashes++;
 		}
 
@@ -2363,7 +2364,7 @@ parse_table_header(
 		}
 
 		if (i < under_end && data[i] == ':') {
-			i++; (*column_data)[col] |= HOEDOWN_TABLE_ALIGN_RIGHT;
+			i++; *(int*)(*column_data)[col] |= HOEDOWN_TABLE_ALIGN_RIGHT;
 			dashes++;
 		}
 
@@ -2437,7 +2438,7 @@ parse_table(
 				data + row_start,
 				i - row_start,
 				columns,
-				col_data, 0
+				col_data, (hoedown_table_flags)0
 			);
 
 			i++;
@@ -2511,7 +2512,7 @@ parse_block(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t siz
 			beg += parse_blockcode(ob, doc, txt_data, end);
 
 		else if (prefix_uli(txt_data, end))
-			beg += parse_list(ob, doc, txt_data, end, 0);
+			beg += parse_list(ob, doc, txt_data, end, (hoedown_list_flags)0);
 
 		else if (prefix_oli(txt_data, end))
 			beg += parse_list(ob, doc, txt_data, end, HOEDOWN_LIST_ORDERED);
@@ -2794,7 +2795,7 @@ hoedown_document_new(
 
 	assert(max_nesting > 0 && renderer);
 
-	doc = hoedown_malloc(sizeof(hoedown_document));
+	doc = (hoedown_document*)hoedown_malloc(sizeof(hoedown_document));
 	memcpy(&doc->md, renderer, sizeof(hoedown_renderer));
 
 	doc->data.opaque = renderer->opaque;
@@ -3000,10 +3001,10 @@ hoedown_document_free(hoedown_document *doc)
 	size_t i;
 
 	for (i = 0; i < (size_t)doc->work_bufs[BUFFER_SPAN].asize; ++i)
-		hoedown_buffer_free(doc->work_bufs[BUFFER_SPAN].item[i]);
+		hoedown_buffer_free((hoedown_buffer*)doc->work_bufs[BUFFER_SPAN].item[i]);
 
 	for (i = 0; i < (size_t)doc->work_bufs[BUFFER_BLOCK].asize; ++i)
-		hoedown_buffer_free(doc->work_bufs[BUFFER_BLOCK].item[i]);
+		hoedown_buffer_free((hoedown_buffer*)doc->work_bufs[BUFFER_BLOCK].item[i]);
 
 	hoedown_stack_uninit(&doc->work_bufs[BUFFER_SPAN]);
 	hoedown_stack_uninit(&doc->work_bufs[BUFFER_BLOCK]);
